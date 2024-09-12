@@ -33,7 +33,7 @@ static const char *TAG = "MAIN.c";
 #define GPIO_CS             14
 #define RCV_HOST    SPI2_HOST
 
-
+#define CPROC_COMM_PRIORITY_TASK 5
 
 /*a delay function for milliseconds delay*/
 void delay_function (uint32_t delayMS)
@@ -55,16 +55,15 @@ void app_main(void)
         ESP_LOGE("tag", "sds");
     } 
     ret = init_spi();
-    ret = init_hw611(&bus_handle, &dev_handle);
-    vTaskDelay(1000);
-    // sensors_t sensors_value = hw611_get_all(&dev_handle);
-    // ESP_LOGI("TAG", "TEMPERATURE: %f",sensors_value.temperature);
-    xTaskCreate(command_parser, "command_parser", 512, NULL, configMAX_PRIORITIES, NULL);
-    while (1) {
-        //Clear receive buffer, set send buffer to something sane
-
-        //Set up a transaction of 128 bytes to send/receive
-
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "Error occured while intializing SPI, err_code=%d", ret);
     }
-
+    ret = init_hw611(&bus_handle, &dev_handle);
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "Error occured while intializing HW611, err_code=%d", ret);
+    }
+    vTaskDelay(1000);
+    
+    // ESP_LOGI("TAG", "TEMPERATURE: %f",sensors_value.temperature);
+    xTaskCreate(communication_routine, "communication_routine", 16384, NULL, CPROC_COMM_PRIORITY_TASK, NULL);
 }
